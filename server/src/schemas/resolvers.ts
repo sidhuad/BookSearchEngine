@@ -1,17 +1,18 @@
 import { User } from "../models/index.js";
-import { AuthenticationError, signToken } from "../services/auth";
+import { UserDocument } from "../models/User.js";
+import { AuthenticationError, signToken } from "../services/auth.js";
 
 interface Context {
-  user?: User;
+  user?: UserDocument;
 }
-interface User {
-  _id: String;
-  username: String;
-  email: String;
-  password: String;
-  savedBooks: object[];
-  bookCount: Number;
-}
+// interface User {
+//   _id: String;
+//   username: String;
+//   email: String;
+//   password: String;
+//   savedBooks: object[];
+//   bookCount: Number;
+// }
 interface addUserArgs {
   input: {
     username: string;
@@ -36,25 +37,26 @@ const resolvers = {
       _parent: unknown,
       _args: any,
       context: Context
-    ): Promise<User | null> => {
+    ): Promise<UserDocument | null> => {
       if (context.user) {
         return await User.findOne({ _id: context.user._id });
       }
       throw AuthenticationError;
     },
   },
-  Mutations: {
+  Mutation: {
     login: async (
       _parent: any,
       { email, password }: { email: string; password: string }
-    ): Promise<{ token: string; user: User }> => {
+    ): Promise<{ token: string; user: UserDocument }> => {
       const user = await User.findOne({ email });
       if (!user) {
-        throw AuthenticationError;
+        console.log('server side resolver cant find user');
+        throw new AuthenticationError('invalid user email');
       }
       const correctPw = await user.isCorrectPassword(password);
       if (!correctPw) {
-        throw AuthenticationError;
+        throw new AuthenticationError('invalid password');
       }
       const token = signToken(user.username, user.email, user._id);
       return { token, user };
@@ -62,7 +64,7 @@ const resolvers = {
     addUser: async (
       _parent: any,
       { input }: addUserArgs
-    ): Promise<{ token: string; user: User }> => {
+    ): Promise<{ token: string; user: UserDocument }> => {
       const user = await User.create({ ...input });
       const token = signToken(user.username, user.email, user._id);
       return { token, user };
@@ -71,12 +73,12 @@ const resolvers = {
       _parent: any,
       { input }: saveBookArgs,
       context: Context
-    ): Promise<User | null> => {
+    ): Promise<UserDocument | null> => {
       if (context.user) {
         return await User.findOneAndUpdate(
           { _id: context.user._id },
           {
-            $addToSet: { savedBooks: [{ ...input }] },
+            $addToSet: { saveBooks: [{ ...input }] },
           },
           {
             new: true,
@@ -90,12 +92,12 @@ const resolvers = {
       _parent: any,
       { bookId }: { bookId: string },
       context: Context
-    ): Promise<User | null> => {
+    ): Promise<UserDocument | null> => {
       if (context.user) {
         return await User.findOneAndUpdate(
           { _id: context.user._id },
           {
-            $pull: { savedBooks: { bookId } },
+            $pull: { saveBooks: { bookId } },
           },
           { new: true }
         );
@@ -104,3 +106,5 @@ const resolvers = {
     },
   },
 };
+
+export default resolvers;
