@@ -16,6 +16,7 @@ import { saveBookIds, getSavedBookIds } from '../utils/localStorage';
 import type { Book } from '../models/Book';
 import type { GoogleAPIBook } from '../models/GoogleAPIBook';
 import { useMutation } from '@apollo/client';
+import { QUERY_ME } from '../utils/queries';
 
 const SearchBooks = () => {
   // create state for holding returned google api data
@@ -79,22 +80,27 @@ const SearchBooks = () => {
     }
 
     try {
-      // const response = await saveBook(bookToSave, token);
 
-      // if (!response.ok) {
-      //   throw new Error('something went wrong!');
-      // }
       console.log(bookToSave);
       
       await saveBook({
-        variables: {input:{...bookToSave}}
+        variables: {input:{...bookToSave}, refetchQueries: [
+                {
+                  query: QUERY_ME,
+                  context: {
+                    headers: {
+                      Authorization: `Bearer ${Auth.loggedIn()? Auth.getToken():""}`,
+                    }
+                  }
+                }
+              ]}
       })
 
       // if book successfully saves to user's account, save book id to state
       setSavedBookIds([...savedBookIds, bookToSave.bookId]);
     } catch (err) {
       console.error(err);
-      alert('something went wrong cannot save book')
+      // alert('something went wrong cannot save book')
     }
   };
 

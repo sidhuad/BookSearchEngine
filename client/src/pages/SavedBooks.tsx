@@ -27,8 +27,8 @@ const SavedBooks = () => {
     },
   });
 
-  // if (loading) return <h2>Loading ...</h2>;
-  // if (error) return <h2>Error: {error.message}</h2>;
+  // if (loading) return <h2>Loading ...</h2>; add loading to query and uncomment this and see your books will stop working
+
  
   useEffect(()=>{
     if (data && data.me) {
